@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Учёт базы</title>
+<style>
+:root {
+    --accent: #f97316;
+    --accent2: #fb923c;
+    --electric: #38bdf8;
+    --income: #22c55e;
+    --expense: #ef4444;
+    --bg: #070a12;
+    --card-bg: rgba(24, 32, 48, 0.72);
+    --card-bg-soft: rgba(24, 32, 48, 0.45);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(249, 115, 22, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes rowIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+@keyframes rotateGear {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.0); }
+    50% { box-shadow: 0 0 24px 2px rgba(249, 115, 22, 0.25); }
+}
+@keyframes pulseGlowGreen {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.0); }
+    50% { box-shadow: 0 0 24px 2px rgba(34, 197, 94, 0.22); }
+}
+@keyframes pulseGlowRed {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.0); }
+    50% { box-shadow: 0 0 24px 2px rgba(239, 68, 68, 0.22); }
+}
+@keyframes flicker {
+    0%, 19%, 21%, 23%, 54%, 56%, 100% { opacity: 1; }
+    20%, 22%, 55% { opacity: 0.55; }
+}
+@keyframes floatY {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes flashIn {
+    0% { background: rgba(249, 115, 22, 0.28); }
+    100% { background: transparent; }
+}
+@keyframes popIn {
+    0% { transform: scale(0.9); opacity: 0; }
+    60% { transform: scale(1.02); opacity: 1; }
+    100% { transform: scale(1); }
+}
+
+html, body { height: 100%; }
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    margin: 0;
+    color: #f8fafc;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 24px 10px;
+    box-sizing: border-box;
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 12% 8%, rgba(249, 115, 22, 0.16), transparent 42%),
+        radial-gradient(circle at 88% 12%, rgba(56, 189, 248, 0.14), transparent 40%),
+        radial-gradient(circle at 50% 100%, rgba(249, 115, 22, 0.08), transparent 55%),
+        repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 42px),
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 42px),
+        var(--bg);
+    background-attachment: fixed;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* decorative watermark icons floating in the background */
+.bg-icon {
+    position: fixed;
+    opacity: 0.05;
+    color: var(--accent);
+    pointer-events: none;
+    z-index: 0;
+}
+.bg-icon.gear1 { top: 6%; right: 4%; width: 160px; height: 160px; animation: rotateGear 40s linear infinite; }
+.bg-icon.gear2 { bottom: 4%; left: 3%; width: 110px; height: 110px; color: var(--electric); animation: rotateGear 55s linear infinite reverse; }
+.bg-icon.truck { bottom: 10%; right: 6%; width: 180px; opacity: 0.045; animation: floatY 7s ease-in-out infinite; }
+.bg-icon.bolt { top: 14%; left: 6%; width: 70px; color: var(--electric); opacity: 0.08; animation: floatY 5s ease-in-out infinite; }
+
+.container {
+    background: var(--card-bg);
+    border-radius: 26px;
+    padding: 22px;
+    width: 100%;
+    max-width: 680px;
+    backdrop-filter: blur(18px);
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04);
+    position: relative;
+    z-index: 1;
+    animation: fadeInUp 0.5s ease both;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 4px 0 4px 0;
+}
+.brand svg { width: 30px; height: 30px; color: var(--accent); animation: rotateGear 18s linear infinite; flex-shrink: 0; }
+h1 {
+    text-align: center;
+    margin: 0;
+    font-size: 26px;
+    letter-spacing: 1.5px;
+    font-weight: 800;
+    background: linear-gradient(90deg, #fff 10%, var(--accent2) 60%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 30px rgba(249,115,22,0.15);
+}
+.subtitle {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 2px 0 20px 0;
+}
+.subtitle span { color: var(--accent2); }
+
+.login-box, .pass-box { text-align: center; padding: 44px 10px; position: relative; }
+.login-icon-wrap { width: 76px; height: 76px; margin: 0 auto 18px auto; border-radius: 50%; background: radial-gradient(circle, rgba(249,115,22,0.22), rgba(249,115,22,0.02)); display: flex; align-items: center; justify-content: center; animation: pulseGlow 2.4s ease-in-out infinite; }
+.login-icon-wrap svg { width: 38px; height: 38px; color: var(--accent2); }
+
+.btn-google {
+    background: white; color: #1e293b; border: none; padding: 14px 26px;
+    border-radius: 14px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25); transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-google:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(0,0,0,0.35); }
+.btn-google:active { transform: translateY(0) scale(0.97); }
+
+#app, #pass-screen { display: none; }
+
+.dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.dash-card {
+    background: var(--card-bg-soft);
+    border: 1px solid var(--border);
+    padding: 14px 12px;
+    border-radius: 16px;
+    text-align: center;
+    transition: border-color 0.3s, transform 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+.dash-card:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+.dash-card.full { grid-column: span 2; animation: pulseGlow 3.2s ease-in-out infinite; }
+.dash-card.full.positive { animation: pulseGlowGreen 3.2s ease-in-out infinite; }
+.dash-card.full.negative { animation: pulseGlowRed 3.2s ease-in-out infinite; }
+.dash-title { font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.dash-title svg { width: 12px; height: 12px; }
+.dash-value { font-size: 20px; font-weight: 800; transition: color 0.3s; }
+.val-income { color: var(--income); }
+.val-expense { color: var(--expense); }
+.val-total { color: #f8fafc; }
+
+.type-selector { display: flex; gap: 10px; margin-bottom: 12px; }
+.type-btn {
+    flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border);
+    background: var(--card-bg-soft); color: #94a3b8; font-weight: 700; cursor: pointer;
+    transition: all 0.25s; font-size: 14px;
+}
+.type-btn:hover { border-color: var(--border-strong); color: #f8fafc; }
+.type-btn.active.income { background: linear-gradient(135deg, var(--income), #16a34a); color: white; border-color: var(--income); box-shadow: 0 6px 18px rgba(34,197,94,0.35); }
+.type-btn.active.expense { background: linear-gradient(135deg, var(--expense), #dc2626); color: white; border-color: var(--expense); box-shadow: 0 6px 18px rgba(239,68,68,0.35); }
+
+.input-group { display: grid; grid-template-columns: 2fr 1fr 48px; gap: 8px; margin-bottom: 16px; }
+input, select {
+    background: rgba(9, 13, 22, 0.65);
+    border: 1px solid var(--border);
+    color: white;
+    padding: 12px;
+    border-radius: 12px;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(249,115,22,0.15); }
+
+.btn-main {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none; color: white;
+    border-radius: 12px; font-weight: bold; cursor: pointer;
+    font-size: 22px; display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 8px 18px rgba(249,115,22,0.28);
+}
+.btn-main:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(249,115,22,0.4); }
+.btn-main:active { transform: scale(0.92); }
+.btn-main.added { animation: popIn 0.35s ease; }
+
+.table-container { max-height: 350px; overflow-y: auto; margin-bottom: 16px; border-radius: 14px; border: 1px solid var(--border); }
+.table-container::-webkit-scrollbar { width: 8px; }
+.table-container::-webkit-scrollbar-thumb { background: rgba(249,115,22,0.35); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 10px; color: #94a3b8; padding: 11px 10px; background: rgba(9, 13, 22, 0.85); position: sticky; top: 0; z-index: 10; letter-spacing: 0.5px; text-transform: uppercase; }
+td { padding: 11px 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
+tbody tr { animation: rowIn 0.35s ease both; transition: background 0.2s; }
+tbody tr:hover { background: rgba(249,115,22,0.06); }
+.time-col { color: #64748b; font-size: 10px; }
+
+.amount-income { color: var(--income); font-weight: 700; }
+.amount-expense { color: var(--expense); font-weight: 700; }
+.empty-state { text-align: center; padding: 34px 10px; color: #64748b; font-size: 13px; }
+.empty-state svg { width: 34px; height: 34px; color: #475569; margin-bottom: 8px; animation: floatY 3s ease-in-out infinite; }
+
+.nav-btns { display: flex; gap: 10px; }
+.btn-sec {
+    flex: 1; background: rgba(51, 65, 85, 0.5); color: white; border: 1px solid var(--border);
+    padding: 13px; border-radius: 12px; cursor: pointer; font-size: 13px; font-weight: 600;
+    transition: background 0.2s, transform 0.15s, border-color 0.2s;
+}
+.btn-sec:hover { background: rgba(51, 65, 85, 0.9); border-color: var(--border-strong); transform: translateY(-1px); }
+.btn-sec:active { transform: scale(0.97); }
+
+.user-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--card-bg-soft); padding: 11px 14px; border-radius: 14px;
+    margin-bottom: 16px; font-size: 12px; border: 1px solid var(--border);
+}
+.user-left { display: flex; align-items: center; gap: 10px; }
+.avatar-dot { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent2), var(--accent)); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+.btn-link { background: none; border: none; color: #94a3b8; cursor: pointer; text-decoration: underline; font-size: 11px; padding: 0; transition: color 0.2s; }
+.btn-link:hover { color: var(--accent2); }
+.action-btn { background: none; border: none; color: var(--accent2); cursor: pointer; font-size: 11px; margin-right: 8px; padding: 0; font-weight: 600; transition: opacity 0.2s; }
+.action-btn:hover { opacity: 0.7; }
+.edit-input { width: 100%; box-sizing: border-box; padding: 7px; font-size: 12px; }
+.month-selector {
+    margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;
+    background: var(--card-bg-soft); padding: 9px 14px; border-radius: 14px; border: 1px solid var(--border);
+}
+.month-selector select { border: none; background: transparent; color: var(--accent2); font-weight: bold; width: auto; padding: 4px; }
+
+.divider-tag { display:flex; align-items:center; gap:8px; color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:1px; margin: 4px 0 10px 2px; }
+.divider-tag svg { width: 13px; height: 13px; color: var(--accent); }
+
+@media (max-width: 420px) {
+    h1 { font-size: 21px; }
+    .dash-value { font-size: 17px; }
+}
+</style>
+</head>
+<body>
+
+<svg class="bg-icon gear1" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3"><circle cx="50" cy="50" r="26"/><circle cx="50" cy="50" r="8"/><g stroke-linecap="round">
+<line x1="50" y1="6" x2="50" y2="18"/><line x1="50" y1="82" x2="50" y2="94"/>
+<line x1="6" y1="50" x2="18" y2="50"/><line x1="82" y1="50" x2="94" y2="50"/>
+<line x1="18" y1="18" x2="26" y2="26"/><line x1="74" y1="74" x2="82" y2="82"/>
+<line x1="82" y1="18" x2="74" y2="26"/><line x1="26" y1="74" x2="18" y2="82"/>
+</g></svg>
+<svg class="bg-icon gear2" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3"><circle cx="50" cy="50" r="26"/><circle cx="50" cy="50" r="8"/><g stroke-linecap="round">
+<line x1="50" y1="6" x2="50" y2="18"/><line x1="50" y1="82" x2="50" y2="94"/>
+<line x1="6" y1="50" x2="18" y2="50"/><line x1="82" y1="50" x2="94" y2="50"/>
+<line x1="18" y1="18" x2="26" y2="26"/><line x1="74" y1="74" x2="82" y2="82"/>
+<line x1="82" y1="18" x2="74" y2="26"/><line x1="26" y1="74" x2="18" y2="82"/>
+</g></svg>
+<svg class="bg-icon truck" viewBox="0 0 200 100" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+<rect x="4" y="30" width="100" height="42"/><path d="M104 44h34l24 20v8h-58z"/>
+<circle cx="40" cy="80" r="12"/><circle cx="150" cy="80" r="12"/>
+<line x1="4" y1="20" x2="80" y2="20"/>
+</svg>
+<svg class="bg-icon bolt" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 11-14h-7l0-6z"/></svg>
+
+<div class="container">
+    <div class="brand">
+        <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6"><circle cx="50" cy="50" r="26"/><circle cx="50" cy="50" r="9"/><g stroke-linecap="round">
+        <line x1="50" y1="6" x2="50" y2="18"/><line x1="50" y1="82" x2="50" y2="94"/>
+        <line x1="6" y1="50" x2="18" y2="50"/><line x1="82" y1="50" x2="94" y2="50"/>
+        <line x1="18" y1="18" x2="26" y2="26"/><line x1="74" y1="74" x2="82" y2="82"/>
+        <line x1="82" y1="18" x2="74" y2="26"/><line x1="26" y1="74" x2="18" y2="82"/>
+        </g></svg>
+        <h1>УЧЁТ БАЗЫ</h1>
+    </div>
+    <div class="subtitle">Ремонт фур <span>•</span> Дизель <span>•</span> Центр электроники</div>
+
+    <!-- Экран входа -->
+    <div id="login-screen" class="login-box">
+        <div class="login-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
+        </div>
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 25px;">Учёт финансов, доходов и расходов базы</p>
+        <button class="btn-google" id="btn-login">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/google.svg" width="18">
+            Войти через Google
+        </button>
+        <div id="login-error" style="display:none; margin-top:16px; padding:12px 14px; border-radius:12px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.35); color:#fca5a5; font-size:12px; text-align:left; line-height:1.5;"></div>
+    </div>
+
+    <!-- Экран пин-кода -->
+    <div id="pass-screen" class="pass-box">
+        <h2 id="pass-title" style="font-size: 18px; margin-bottom: 15px;">Введите пароль доступа</h2>
+        <input type="password" id="entry-pass" placeholder="****" style="text-align:center; font-size: 22px; max-width: 180px; letter-spacing: 5px; margin-bottom: 15px;">
+        <br>
+        <button class="btn-main" id="btn-check-pass" style="width: 180px; margin: 0 auto; padding: 12px; font-size: 14px;">ОТКРЫТЬ</button>
+        <br><br>
+        <button class="btn-link" id="btn-reset-pass">Сбросить пароль</button>
+    </div>
+
+    <!-- Основное приложение -->
+    <div id="app">
+        <div class="user-bar">
+            <div class="user-left">
+                <div class="avatar-dot" id="avatar-dot">?</div>
+                <div>
+                    <b id="user-name"></b><br>
+                    <button class="btn-link" id="btn-change-pass">Изменить пароль</button>
+                </div>
+            </div>
+            <button class="btn-link" id="btn-logout" style="color:#ef4444;">Выход</button>
+        </div>
+
+        <div class="month-selector">
+            <span style="font-size: 12px; color: #94a3b8;">Период отчета:</span>
+            <select id="month-select"></select>
+        </div>
+
+        <div class="dashboard">
+            <div class="dash-card">
+                <div class="dash-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Приход</div>
+                <div class="dash-value val-income" id="total-income" data-raw="0">0 смн</div>
+            </div>
+            <div class="dash-card">
+                <div class="dash-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>Расход</div>
+                <div class="dash-value val-expense" id="total-expense" data-raw="0">0 смн</div>
+            </div>
+            <div class="dash-card full" id="balance-card">
+                <div class="dash-title">Остаток (за всё время)</div>
+                <div class="dash-value val-total" id="total-balance" data-raw="0">0 смн</div>
+            </div>
+        </div>
+
+        <div class="type-selector">
+            <button type="button" class="type-btn income active" id="type-income" onclick="setTxType('income')">➕ Приход</button>
+            <button type="button" class="type-btn expense" id="type-expense" onclick="setTxType('expense')">➖ Расход</button>
+        </div>
+        <div class="input-group">
+            <input type="text" id="task" list="history" placeholder="Описание (напр. Заказ / Материалы)">
+            <datalist id="history"></datalist>
+            <input type="number" id="price" placeholder="Сумма">
+            <button class="btn-main" id="btn-add">+</button>
+        </div>
+
+        <div class="divider-tag">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>
+            Журнал операций
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Описание</th>
+                        <th>Сумма</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+
+        <div class="nav-btns">
+            <button class="btn-sec" id="btn-txt">📄 Скачать TXT отчет</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBo5nsIBswK0NnQS89QdsD517Xqbd_jK2U",
+        authDomain: "dyadya-app.firebaseapp.com",
+        projectId: "dyadya-app",
+        storageBucket: "dyadya-app.firebasestorage.app",
+        messagingSenderId: "396455935954",
+        appId: "1:396455935954:web:933d06290ce7642099d20b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    let currentUser = null;
+    let selectedMonthYear = '';
+    let allData = [];
+    let currentMonth = '';
+    let currentType = 'income'; // 'income' или 'expense'
+
+    window.setTxType = function(type) {
+        currentType = type;
+        document.getElementById('type-income').classList.toggle('active', type === 'income');
+        document.getElementById('type-expense').classList.toggle('active', type === 'expense');
+    }
+
+    function formatNumber(num) {
+        const n = Number(num);
+        if (!isFinite(n)) return '0';
+        return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    // Плавная анимация изменения чисел (приход/расход/остаток)
+    function animateNumber(el, endValue, suffix) {
+        const startValue = Number(el.dataset.raw) || 0;
+        if (startValue === endValue) { el.innerText = formatNumber(endValue) + suffix; return; }
+        const duration = 550;
+        const startTime = performance.now();
+        function step(now) {
+            const p = Math.min((now - startTime) / duration, 1);
+            const eased = 1 - Math.pow(1 - p, 3);
+            const current = startValue + (endValue - startValue) * eased;
+            el.innerText = formatNumber(current) + suffix;
+            if (p < 1) requestAnimationFrame(step);
+            else { el.innerText = formatNumber(endValue) + suffix; el.dataset.raw = endValue; }
+        }
+        requestAnimationFrame(step);
+    }
+
+    function showLoginError(message) {
+        const box = document.getElementById('login-error');
+        box.innerText = message;
+        box.style.display = 'block';
+    }
+
+    document.getElementById('btn-login').onclick = async () => {
+        const box = document.getElementById('login-error');
+        box.style.display = 'none';
+        try {
+            await signInWithPopup(auth, provider);
+        } catch (err) {
+            console.error('Ошибка входа Google:', err);
+            let msg = 'Не удалось войти через Google. Код ошибки: ' + (err.code || err.message);
+            if (err.code === 'auth/operation-not-supported-in-this-environment') {
+                msg = 'Вход не работает при открытии файла напрямую (file://). Загрузите страницу на хостинг (Firebase Hosting, GitHub Pages и т.п.) или откройте её через локальный сервер (http://localhost) — Google-вход требует адрес http/https.';
+            } else if (err.code === 'auth/unauthorized-domain') {
+                msg = 'Этот домен не разрешён в Firebase. Зайдите в консоль Firebase → Authentication → Settings → Authorized domains и добавьте текущий домен сайта.';
+            } else if (err.code === 'auth/popup-blocked') {
+                msg = 'Браузер заблокировал всплывающее окно входа. Разрешите всплывающие окна для этого сайта и попробуйте снова.';
+            } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+                msg = 'Окно входа было закрыто до завершения авторизации. Попробуйте ещё раз и дождитесь окна Google.';
+            } else if (err.code === 'auth/network-request-failed') {
+                msg = 'Проблема с интернет-соединением. Проверьте сеть и попробуйте снова.';
+            }
+            showLoginError(msg);
+        }
+    };
+
+    document.getElementById('btn-logout').onclick = () => signOut(auth).then(() => location.reload());
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('pass-screen').style.display = 'block';
+
+            const savedPass = localStorage.getItem('app_pass_' + user.uid);
+            if (!savedPass) {
+                document.getElementById('pass-title').innerText = "Придумайте пин-код доступа";
+            }
+        }
+    });
+
+    document.getElementById('btn-check-pass').onclick = () => {
+        const input = document.getElementById('entry-pass').value;
+        const key = 'app_pass_' + currentUser.uid;
+        const saved = localStorage.getItem(key);
+        if (!saved) {
+            if (input.length > 0) {
+                localStorage.setItem(key, input);
+                startApp();
+            } else { alert("Введите хотя бы один символ!"); }
+        } else {
+            if (input === saved) { startApp(); }
+            else { alert("Неверный пароль!"); }
+        }
+    };
+
+    document.getElementById('btn-change-pass').onclick = document.getElementById('btn-reset-pass').onclick = () => {
+        if (confirm("Сбросить текущий пароль?")) {
+            localStorage.removeItem('app_pass_' + currentUser.uid);
+            location.reload();
+        }
+    };
+
+    function startApp() {
+        document.getElementById('pass-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        document.getElementById('user-name').innerText = currentUser.displayName;
+        const dot = document.getElementById('avatar-dot');
+        dot.innerText = (currentUser.displayName || '?').trim().charAt(0).toUpperCase();
+        loadData(currentUser.uid);
+    }
+
+    document.getElementById('btn-add').onclick = async () => {
+        const task = document.getElementById('task').value.trim();
+        const price = parseFloat(document.getElementById('price').value);
+        if (task && price) {
+            const btn = document.getElementById('btn-add');
+            btn.classList.remove('added'); void btn.offsetWidth; btn.classList.add('added');
+            await addDoc(collection(db, "expenses"), {
+                uid: currentUser.uid,
+                desc: task,
+                price: price,
+                type: currentType, // 'income' или 'expense'
+                date: new Date()
+            });
+            document.getElementById('task').value = "";
+            document.getElementById('price').value = "";
+            document.getElementById('task').focus();
+            selectedMonthYear = currentMonth;
+            document.getElementById('month-select').value = currentMonth;
+            updateDisplay();
+        }
+    };
+
+    function loadData(uid) {
+        const q = query(collection(db, "expenses"), orderBy("date", "desc"));
+        onSnapshot(q, (snap) => {
+            allData = [];
+            snap.forEach(docSnap => {
+                const d = docSnap.data();
+                if (d.uid === uid) {
+                    allData.push({ id: docSnap.id, ...d });
+                }
+            });
+            populateMonthSelector();
+            updateDisplay();
+        });
+    }
+
+    function populateMonthSelector() {
+        const select = document.getElementById('month-select');
+        select.innerHTML = '';
+        const months = new Set();
+        allData.forEach(item => {
+            if (item.date) {
+                const dateObj = item.date.toDate();
+                const monthYear = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+                months.add(monthYear);
+            }
+        });
+        const now = new Date();
+        currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        months.add(currentMonth);
+        const sortedMonths = Array.from(months).sort().reverse();
+        sortedMonths.forEach(month => {
+            const option = document.createElement('option');
+            const [year, monthNum] = month.split('-');
+            const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+            option.value = month;
+            option.textContent = `${monthNames[parseInt(monthNum) - 1]} ${year}`;
+            select.appendChild(option);
+        });
+        select.value = selectedMonthYear || currentMonth;
+        selectedMonthYear = select.value;
+        select.onchange = () => {
+            selectedMonthYear = select.value;
+            updateDisplay();
+        };
+    }
+
+    function updateDisplay() {
+        const body = document.getElementById('table-body');
+        const history = document.getElementById('history');
+        body.innerHTML = "";
+        history.innerHTML = "";
+
+        let totalIncome = 0;
+        let totalExpense = 0;
+        let words = new Set();
+        let rowIndex = 0;
+        let itemsInMonth = [];
+
+        allData.forEach(item => {
+            if (!item.date) return;
+            const dateObj = item.date.toDate();
+            const monthYear = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+            if (monthYear === selectedMonthYear) itemsInMonth.push({ item, dateObj });
+        });
+
+        if (itemsInMonth.length === 0) {
+            body.innerHTML = `<tr><td colspan="4"><div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg>
+                <div>Записей за этот период пока нет</div>
+            </div></td></tr>`;
+        }
+
+        itemsInMonth.forEach(({ item, dateObj }) => {
+            const dateStr = dateObj.toLocaleDateString();
+            const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const priceNum = Number(item.price) || 0;
+            const isInc = item.type === 'income' || !item.type; // По умолчанию доход для старых записей
+
+            const sign = isInc ? '+' : '-';
+            const cssClass = isInc ? 'amount-income' : 'amount-expense';
+            const priceDisplay = `${sign} ${formatNumber(priceNum)} смн`;
+            const delay = Math.min(rowIndex * 0.04, 0.4);
+            const row = `<tr data-id="${item.id}" style="animation-delay:${delay}s">
+                <td>${dateStr} <br><span class="time-col">${timeStr}</span></td>
+                <td>${item.desc}</td>
+                <td class="${cssClass}">${priceDisplay}</td>
+                <td>
+                    <button class="action-btn" onclick="editRow(this)">Изменить</button>
+                    <button class="action-btn" style="color:#ef4444;" onclick="deleteRow('${item.id}')">Удалить</button>
+                </td>
+            </tr>`;
+            body.innerHTML += row;
+            rowIndex++;
+            if (isInc) totalIncome += priceNum;
+            else totalExpense += priceNum;
+            words.add(item.desc);
+        });
+
+        words.forEach(w => history.innerHTML += `<option value="${w}">`);
+
+        animateNumber(document.getElementById('total-income'), totalIncome, " смн");
+        animateNumber(document.getElementById('total-expense'), totalExpense, " смн");
+
+        // Остаток считается по ВСЕМ записям за всё время (не сбрасывается при смене периода)
+        let allTimeIncome = 0;
+        let allTimeExpense = 0;
+        allData.forEach(item => {
+            const priceNum = Number(item.price) || 0;
+            const isInc = item.type === 'income' || !item.type;
+            if (isInc) allTimeIncome += priceNum;
+            else allTimeExpense += priceNum;
+        });
+        const balance = allTimeIncome - allTimeExpense;
+        const balanceEl = document.getElementById('total-balance');
+        animateNumber(balanceEl, balance, " смн");
+        balanceEl.className = "dash-value " + (balance >= 0 ? "val-income" : "val-expense");
+
+        const balanceCard = document.getElementById('balance-card');
+        balanceCard.classList.remove('positive', 'negative');
+        balanceCard.classList.add(balance >= 0 ? 'positive' : 'negative');
+    }
+
+    window.editRow = function(btn) {
+        const row = btn.closest('tr');
+        const descCell = row.cells[1];
+        const priceCell = row.cells[2];
+        const actionsCell = row.cells[3];
+        const originalDesc = descCell.innerText;
+        const rawPriceText = priceCell.innerText;
+        const isInc = !rawPriceText.startsWith('-');
+        const originalPrice = rawPriceText.replace(/[^\d]/g, '');
+        descCell.innerHTML = `<input class="edit-input" type="text" value="${originalDesc}">`;
+        priceCell.innerHTML = `<input class="edit-input" type="number" value="${originalPrice}">`;
+        actionsCell.innerHTML = `
+            <button class="action-btn" onclick="saveRow('${row.dataset.id}', this, '${isInc ? 'income' : 'expense'}')">Сохранить</button>
+            <button class="action-btn" onclick="cancelEdit(this, '${originalDesc}', '${originalPrice}', ${isInc})">Отмена</button>
+        `;
+    };
+
+    window.saveRow = async function(id, btn, type) {
+        const row = btn.closest('tr');
+        const descInput = row.cells[1].querySelector('input');
+        const priceInput = row.cells[2].querySelector('input');
+        const newDesc = descInput.value.trim();
+        const newPrice = parseFloat(priceInput.value);
+        if (newDesc && newPrice) {
+            await updateDoc(doc(db, "expenses", id), { desc: newDesc, price: newPrice, type: type });
+        }
+    };
+
+    window.cancelEdit = function(btn, originalDesc, originalPrice, isInc) {
+        const row = btn.closest('tr');
+        row.cells[1].innerHTML = originalDesc;
+        const sign = isInc ? '+' : '-';
+        row.cells[2].className = isInc ? 'amount-income' : 'amount-expense';
+        row.cells[2].innerHTML = `${sign} ${formatNumber(originalPrice)} смн`;
+        row.cells[3].innerHTML = `
+            <button class="action-btn" onclick="editRow(this)">Изменить</button>
+            <button class="action-btn" style="color:#ef4444;" onclick="deleteRow('${row.dataset.id}')">Удалить</button>
+        `;
+    };
+
+    window.deleteRow = async function(id) {
+        if (confirm("Удалить эту запись?")) {
+            await deleteDoc(doc(db, "expenses", id));
+        }
+    };
+
+    document.getElementById('btn-txt').onclick = () => {
+        if (!currentUser) { alert('Сначала войдите'); return; }
+        const select = document.getElementById('month-select');
+        const selectedOption = select.options[select.selectedIndex];
+        const title = selectedOption ? 'ОТЧЕТ ЗА ' + selectedOption.textContent.toUpperCase() : 'ФИНАНСОВЫЙ ОТЧЕТ';
+
+        const lines = [title, 'База: Ремонт фур • Дизель • Электроника', 'Мастер: ' + currentUser.displayName, '', 'Дата/Время\tТип\tОписание\tСумма (смн)'];
+        let tInc = 0, tExp = 0;
+        document.querySelectorAll('#table-body tr').forEach(tr => {
+            if (!tr.dataset.id) return;
+            const dateCell = tr.cells[0]?.innerText.replace(/\s+/g, ' ').trim() || '';
+            const desc = tr.cells[1]?.innerText.trim() || '';
+            const priceText = tr.cells[2]?.innerText.trim() || '';
+            const isInc = !priceText.startsWith('-');
+            const num = parseFloat(priceText.replace(/[^\d]/g, '')) || 0;
+
+            if (isInc) tInc += num; else tExp += num;
+
+            lines.push(`${dateCell}\t${isInc ? 'Приход' : 'Расход'}\t${desc}\t${priceText}`);
+        });
+        lines.push('', `Всего приход: ${formatNumber(tInc)} смн`);
+        lines.push(`Всего расход: ${formatNumber(tExp)} смн`);
+        lines.push(`Баланс за период: ${formatNumber(tInc - tExp)} смн`);
+        const blob = new Blob([lines.join('\r\n')], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `finance_report_${selectedMonthYear}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    };
+</script>
+</body>
+</html>
