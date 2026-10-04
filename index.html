@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Учёт базы</title>
+<style>
+:root {
+    --accent: #f97316;
+    --accent2: #fb923c;
+    --electric: #38bdf8;
+    --income: #22c55e;
+    --expense: #ef4444;
+    --bg: #070a12;
+    --card-bg: rgba(24, 32, 48, 0.72);
+    --card-bg-soft: rgba(24, 32, 48, 0.45);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(249, 115, 22, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes rowIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+@keyframes rotateGear {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.0); }
+    50% { box-shadow: 0 0 24px 2px rgba(249, 115, 22, 0.25); }
+}
+@keyframes pulseGlowGreen {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.0); }
+    50% { box-shadow: 0 0 24px 2px rgba(34, 197, 94, 0.22); }
+}
+@keyframes pulseGlowRed {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.0); }
+    50% { box-shadow: 0 0 24px 2px rgba(239, 68, 68, 0.22); }
+}
+@keyframes flicker {
+    0%, 19%, 21%, 23%, 54%, 56%, 100% { opacity: 1; }
+    20%, 22%, 55% { opacity: 0.55; }
+}
+@keyframes floatY {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes flashIn {
+    0% { background: rgba(249, 115, 22, 0.28); }
+    100% { background: transparent; }
+}
+@keyframes popIn {
+    0% { transform: scale(0.9); opacity: 0; }
+    60% { transform: scale(1.02); opacity: 1; }
+    100% { transform: scale(1); }
+}
+
+html, body { height: 100%; }
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    margin: 0;
+    color: #f8fafc;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 24px 10px;
+    box-sizing: border-box;
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 12% 8%, rgba(249, 115, 22, 0.16), transparent 42%),
+        radial-gradient(circle at 88% 12%, rgba(56, 189, 248, 0.14), transparent 40%),
+        radial-gradient(circle at 50% 100%, rgba(249, 115, 22, 0.08), transparent 55%),
+        repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 42px),
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 42px),
+        var(--bg);
+    background-attachment: fixed;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* decorative watermark icons floating in the background */
+.bg-icon {
+    position: fixed;
+    opacity: 0.05;
+    color: var(--accent);
+    pointer-events: none;
+    z-index: 0;
+}
+.bg-icon.gear1 { top: 6%; right: 4%; width: 160px; height: 160px; animation: rotateGear 40s linear infinite; }
+.bg-icon.gear2 { bottom: 4%; left: 3%; width: 110px; height: 110px; color: var(--electric); animation: rotateGear 55s linear infinite reverse; }
+.bg-icon.truck { bottom: 10%; right: 6%; width: 180px; opacity: 0.045; animation: floatY 7s ease-in-out infinite; }
+.bg-icon.bolt { top: 14%; left: 6%; width: 70px; color: var(--electric); opacity: 0.08; animation: floatY 5s ease-in-out infinite; }
+
+.container {
+    background: var(--card-bg);
+    border-radius: 26px;
+    padding: 22px;
+    width: 100%;
+    max-width: 680px;
+    backdrop-filter: blur(18px);
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04);
+    position: relative;
+    z-index: 1;
+    animation: fadeInUp 0.5s ease both;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 4px 0 4px 0;
+}
+.brand svg { width: 30px; height: 30px; color: var(--accent); animation: rotateGear 18s linear infinite; flex-shrink: 0; }
+h1 {
+    text-align: center;
+    margin: 0;
+    font-size: 26px;
+    letter-spacing: 1.5px;
+    font-weight: 800;
+    background: linear-gradient(90deg, #fff 10%, var(--accent2) 60%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 30px rgba(249,115,22,0.15);
+}
+.subtitle {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 2px 0 20px 0;
+}
+.subtitle span { color: var(--accent2); }
+
+.login-box, .pass-box { text-align: center; padding: 44px 10px; position: relative; }
+.login-icon-wrap { width: 76px; height: 76px; margin: 0 auto 18px auto; border-radius: 50%; background: radial-gradient(circle, rgba(249,115,22,0.22), rgba(249,115,22,0.02)); display: flex; align-items: center; justify-content: center; animation: pulseGlow 2.4s ease-in-out infinite; }
+.login-icon-wrap svg { width: 38px; height: 38px; color: var(--accent2); }
+
+.btn-google {
+    background: white; color: #1e293b; border: none; padding: 14px 26px;
+    border-radius: 14px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25); transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-google:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(0,0,0,0.35); }
+.btn-google:active { transform: translateY(0) scale(0.97); }
+
+#app, #pass-screen { display: none; }
+
+.dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.dash-card {
+    background: var(--card-bg-soft);
+    border: 1px solid var(--border);
+    padding: 14px 12px;
+    border-radius: 16px;
+    text-align: center;
+    transition: border-color 0.3s, transform 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+.dash-card:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+.dash-card.full { grid-column: span 2; animation: pulseGlow 3.2s ease-in-out infinite; }
+.dash-card.full.positive { animation: pulseGlowGreen 3.2s ease-in-out infinite; }
+.dash-card.full.negative { animation: pulseGlowRed 3.2s ease-in-out infinite; }
+.dash-title { font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.dash-title svg { width: 12px; height: 12px; }
+.dash-value { font-size: 20px; font-weight: 800; transition: color 0.3s; }
+.val-income { color: var(--income); }
+.val-expense { color: var(--expense); }
+.val-total { color: #f8fafc; }
+
+.type-selector { display: flex; gap: 10px; margin-bottom: 12px; }
+.type-btn {
+    flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border);
+    background: var(--card-bg-soft); color: #94a3b8; font-weight: 700; cursor: pointer;
+    transition: all 0.25s; font-size: 14px;
+}
+.type-btn:hover { border-color: var(--border-strong); color: #f8fafc; }
+.type-btn.active.income { background: linear-gradient(135deg, var(--income), #16a34a); color: white; border-color: var(--income); box-shadow: 0 6px 18px rgba(34,197,94,0.35); }
+.type-btn.active.expense { background: linear-gradient(135deg, var(--expense), #dc2626); color: white; border-color: var(--expense); box-shadow: 0 6px 18px rgba(239,68,68,0.35); }
+
+.input-group { display: grid; grid-template-columns: 2fr 1fr 48px; gap: 8px; margin-bottom: 16px; }
+input, select {
+    background: rgba(9, 13, 22, 0.65);
+    border: 1px solid var(--border);
+    color: white;
+    padding: 12px;
+    border-radius: 12px;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(249,115,22,0.15); }
+
+.btn-main {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none; color: white;
+    border-radius: 12px; font-weight: bold; cursor: pointer;
+    font-size: 22px; display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 8px 18px rgba(249,115,22,0.28);
+}
+.btn-main:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(249,115,22,0.4); }
+.btn-main:active { transform: scale(0.92); }
+.btn-main.added { animation: popIn 0.35s ease; }
+
+.table-container { max-height: 350px; overflow-y: auto; margin-bottom: 16px; border-radius: 14px; border: 1px solid var(--border); }
+.table-container::-webkit-scrollbar { width: 8px; }
+.table-container::-webkit-scrollbar-thumb { background: rgba(249,115,22,0.35); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 10px; color: #94a3b8; padding: 11px 10px; background: rgba(9, 13, 22, 0.85); position: sticky; top: 0; z-index: 10; letter-spacing: 0.5px; text-transform: uppercase; }
+td { padding: 11px 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
+tbody tr { animation: rowIn 0.35s ease both; transition: background 0.2s; }
+tbody tr:hover { background: rgba(249,115,22,0.06); }
+.time-col { color: #64748b; font-size: 10px; }
+
+.amount-income { color: var(--income); font-weight: 700; }
+.amount-expense { color: var(--expense); font-weight: 700; }
+.empty-state { text-align: center; padding: 34px 10px; color: #64748b; font-size: 13px; }
+.empty-state svg { width: 34px; height: 34px; color: #475569; margin-bottom: 8px; animation: floatY 3s ease-in-out infinite; }
+
+.nav-btns { display: flex; gap: 10px; }
+.btn-sec {
+    flex: 1; background: rgba(51, 65, 85, 0.5); color: white; border: 1px solid var(--border);
+    padding: 13px; border-radius: 12px; cursor: pointer; font-size: 13px; font-weight: 600;
+    transition: background 0.2s, transform 0.15s, border-color 0.2s;
+}
+.btn-sec:hover { background: rgba(51, 65, 85, 0.9); border-color: var(--border-strong); transform: translateY(-1px); }
+.btn-sec:active { transform: scale(0.97); }
+
+.user-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--card-bg-soft); padding: 11px 14px; border-radius: 14px;
+    margin-bottom: 16px; font-size: 12px; border: 1px solid var(--border);
+}
+.user-left { display: flex; align-items: center; gap: 10px; }
+.avatar-dot { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent2), var(--accent)); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+.btn-link { background: none; border: none; color: #94a3b8; cursor: pointer; text-decoration: underline; font-size: 11px; padding: 0; transition: color 0.2s; }
+.btn-link:hover { color: var(--accent2); }
+.action-btn { background: none; border: none; color: var(--accent2); cursor: pointer; font-size: 11px; margin-right: 8px; padding: 0; font-weight: 600; transition: opacity 0.2s; }
+.action-btn:hover { opacity: 0.7; }
+.edit-input { width: 100%; box-sizing: border-box; padding: 7px; font-size: 12px; }
+.month-selector {
+    margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;
+    background: var(--card-bg-soft); padding: 9px 14px; border-radius: 14px; border: 1px solid var(--border);
+}
+.month-selector select { border: none; background: transparent; color: var(--accent2); font-weight: bold; width: auto; padding: 4px; }
+
+.divider-tag { display:flex; align-items:center; gap:8px; color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:1px; margin: 4px 0 10px 2px; }
+.divider-tag svg { width: 13px; height: 13px; color: var(--accent); }
+
+@media (max-width: 420px) {
+    h1 { font-size: 21px; }
+    .dash-value { font-size: 17px; }
+}
+
+/* ===== Новое ===== */
+input[type=date] { color-scheme: dark; }
+.add-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.add-row { display: grid; grid-template-columns: 1fr 1fr 52px; gap: 8px; }
+.type-btn { font-size: 13px; padding: 11px 6px; }
+.type-btn.active.debt { background: linear-gradient(135deg, #eab308, #ca8a04); color: white; border-color: #eab308; box-shadow: 0 6px 18px rgba(234,179,8,0.35); }
+.amount-debt { color: #facc15; font-weight: 700; }
+
+.today-line { text-align: center; font-size: 12px; color: #94a3b8; margin: -6px 0 14px 0; }
+.today-line b.inc { color: var(--income); }
+.today-line b.exp { color: var(--expense); }
+
+.tabs { display: flex; gap: 6px; margin-bottom: 10px; background: var(--card-bg-soft); padding: 4px; border-radius: 12px; border: 1px solid var(--border); }
+.tab { flex: 1; padding: 9px; border: none; border-radius: 9px; background: transparent; color: #94a3b8; font-weight: 700; cursor: pointer; font-size: 13px; transition: background 0.2s, color 0.2s; }
+.tab.active { background: rgba(249,115,22,0.18); color: var(--accent2); }
+.tab .count { display: inline-block; min-width: 18px; padding: 1px 6px; margin-left: 4px; border-radius: 9px; background: #eab308; color: #111; font-size: 11px; }
+.tab .count:empty { display: none; }
+
+.search-info { font-size: 11px; color: #94a3b8; margin: 0 0 8px 2px; min-height: 0; }
+.search-info:empty { display: none; }
+#search { margin-bottom: 8px; }
+
+.net-status { display: none; margin-bottom: 12px; padding: 10px 12px; border-radius: 12px; font-size: 12px; line-height: 1.4; background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.35); color: #bae6fd; }
+.net-status.show { display: block; }
+.demo-banner { margin-bottom: 12px; padding: 10px 12px; border-radius: 12px; font-size: 12px; background: rgba(234,179,8,0.12); border: 1px solid rgba(234,179,8,0.4); color: #fde68a; text-align: center; }
+
+.debt-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 14px; background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.3); margin-bottom: 10px; font-size: 13px; color: #fde68a; }
+.debt-head b { font-size: 18px; color: #facc15; }
+.debt-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; max-height: 420px; overflow-y: auto; }
+.debt-card { background: var(--card-bg-soft); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; animation: rowIn 0.3s ease both; }
+.debt-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.debt-top b { font-size: 14px; word-break: break-word; }
+.debt-left { color: #facc15; font-weight: 800; white-space: nowrap; }
+.debt-sub { font-size: 11px; color: #64748b; margin-top: 4px; }
+.debt-bar { height: 4px; border-radius: 4px; background: rgba(255,255,255,0.08); margin-top: 8px; overflow: hidden; }
+.debt-bar span { display: block; height: 100%; background: var(--income); }
+.debt-actions { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.debt-actions .pay { color: var(--income); font-size: 12px; }
+.debt-card.paid { opacity: 0.6; }
+details.paid-list summary { cursor: pointer; font-size: 12px; color: #94a3b8; margin: 4px 0 8px 2px; }
+
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.65); display: none; align-items: flex-end; justify-content: center; z-index: 100; padding: 10px; }
+.modal-bg.open { display: flex; }
+.modal { background: #111827; border: 1px solid var(--border); border-radius: 20px; padding: 18px; width: 100%; max-width: 440px; animation: fadeInUp 0.25s ease; max-height: 92vh; overflow-y: auto; }
+.modal h3 { margin: 0 0 12px 0; font-size: 17px; }
+.modal label { display: block; font-size: 11px; color: #94a3b8; margin: 10px 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.modal .m-note { font-size: 13px; color: #fde68a; background: rgba(234,179,8,0.1); padding: 10px; border-radius: 10px; }
+.modal-btns { display: flex; gap: 8px; margin-top: 16px; }
+.modal-btns .btn-main { flex: 1; font-size: 15px; padding: 13px; }
+@media (min-width: 600px) { .modal-bg { align-items: center; } }
+
+.icon-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; width: 32px; height: 30px; cursor: pointer; font-size: 14px; padding: 0; transition: background 0.2s; }
+.icon-btn:hover { background: rgba(249,115,22,0.18); }
+.acts { white-space: nowrap; text-align: right; }
+.acts .icon-btn + .icon-btn { margin-left: 4px; }
+td.desc-col { word-break: break-word; }
+@media (max-width: 480px) {
+    td, th { padding: 9px 6px; }
+    td { font-size: 12px; }
+    .icon-btn { width: 30px; height: 28px; font-size: 13px; }
+    .acts .icon-btn + .icon-btn { margin-left: 0; margin-top: 4px; }
+    .acts { white-space: normal; width: 34px; }
+    .acts .icon-btn { display: block; }
+}
+.shake { animation: shake 0.35s; border-color: var(--expense) !important; }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+</style>
+</head>
+<body>
+
+<svg class="bg-icon gear1" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3"><circle cx="50" cy="50" r="26"/><circle cx="50" cy="50" r="8"/><g stroke-linecap="round">
+<line x1="50" y1="6" x2="50" y2="18"/><line x1="50" y1="82" x2="50" y2="94"/>
+<line x1="6" y1="50" x2="18" y2="50"/><line x1="82" y1="50" x2="94" y2="50"/>
+<line x1="18" y1="18" x2="26" y2="26"/><line x1="74" y1="74" x2="82" y2="82"/>
+<line x1="82" y1="18" x2="74" y2="26"/><line x1="26" y1="74" x2="18" y2="82"/>
+</g></svg>
+<svg class="bg-icon gear2" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3"><circle cx="50" cy="50" r="26"/><circle cx="50" cy="50" r="8"/><g stroke-linecap="round">
+<line x1="50" y1="6" x2="50" y2="18"/><line x1="50" y1="82" x2="50" y2="94"/>
+<line x1="6" y1="50" x2="18" y2="50"/><line x1="82" y1="50" x2="94" y2="50"/>
+<line x1="18" y1="18" x2="26" y2="26"/><line x1="74" y1="74" x2="82" y2="82"/>
+<line x1="82" y1="18" x2="74" y2="26"/><line x1="26" y1="74" x2="18" y2="82"/>
+</g></svg>
+<svg class="bg-icon truck" viewBox="0 0 200 100" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+<rect x="4" y="30" width="100" height="42"/><path d="M104 44h34l24 20v8h-58z"/>
+<circle cx="40" cy="80" r="12"/><circle cx="150" cy="80" r="12"/>
+<line x1="4" y1="20" x2="80" y2="20"/>
+</svg>
+<svg class="bg-icon bolt" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 11-14h-7l0-6z"/></svg>
+
+<div class="container">
+    <div class="brand">
+        <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6"><circle cx="50" cy="50" r="26"/><circle cx="50" cy="50" r="9"/><g stroke-linecap="round">
+        <line x1="50" y1="6" x2="50" y2="18"/><line x1="50" y1="82" x2="50" y2="94"/>
+        <line x1="6" y1="50" x2="18" y2="50"/><line x1="82" y1="50" x2="94" y2="50"/>
+        <line x1="18" y1="18" x2="26" y2="26"/><line x1="74" y1="74" x2="82" y2="82"/>
+        <line x1="82" y1="18" x2="74" y2="26"/><line x1="26" y1="74" x2="18" y2="82"/>
+        </g></svg>
+        <h1>УЧЁТ БАЗЫ</h1>
+    </div>
+    <div class="subtitle">Ремонт фур <span>•</span> Дизель <span>•</span> Центр электроники</div>
+
+    <!-- Экран входа -->
+    <div id="login-screen" class="login-box">
+        <div class="login-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
+        </div>
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 25px;">Учёт финансов, доходов и расходов базы</p>
+        <button class="btn-google" id="btn-login">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/google.svg" width="18" alt="">
+            Войти через Google
+        </button>
+        <div id="login-error" style="display:none; margin-top:16px; padding:12px 14px; border-radius:12px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.35); color:#fca5a5; font-size:12px; text-align:left; line-height:1.5;"></div>
+    </div>
+
+    <!-- Экран пин-кода -->
+    <div id="pass-screen" class="pass-box">
+        <h2 id="pass-title" style="font-size: 18px; margin-bottom: 15px;">Введите пароль доступа</h2>
+        <input type="password" id="entry-pass" autocomplete="off" placeholder="****" style="text-align:center; font-size: 22px; max-width: 180px; letter-spacing: 5px; margin-bottom: 15px;">
+        <br>
+        <button class="btn-main" id="btn-check-pass" style="width: 180px; margin: 0 auto; padding: 12px; font-size: 14px;">ОТКРЫТЬ</button>
+        <br><br>
+        <button class="btn-link" id="btn-reset-pass">Сбросить пароль</button>
+    </div>
+
+    <!-- Основное приложение -->
+    <div id="app">
+        <div id="demo-banner" class="demo-banner" style="display:none;">🧪 ДЕМО-РЕЖИМ — вход отключён, данные не сохраняются (только для проверки)</div>
+        <div id="net-status" class="net-status"></div>
+
+        <div class="user-bar">
+            <div class="user-left">
+                <div class="avatar-dot" id="avatar-dot">?</div>
+                <div>
+                    <b id="user-name"></b><br>
+                    <button class="btn-link" id="btn-change-pass">Изменить пароль</button>
+                </div>
+            </div>
+            <button class="btn-link" id="btn-logout" style="color:#ef4444;">Выход</button>
+        </div>
+
+        <div class="month-selector">
+            <span style="font-size: 12px; color: #94a3b8;">Период отчета:</span>
+            <select id="month-select"></select>
+        </div>
+
+        <div class="dashboard">
+            <div class="dash-card">
+                <div class="dash-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Приход</div>
+                <div class="dash-value val-income" id="total-income" data-raw="0">0 смн</div>
+            </div>
+            <div class="dash-card">
+                <div class="dash-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>Расход</div>
+                <div class="dash-value val-expense" id="total-expense" data-raw="0">0 смн</div>
+            </div>
+            <div class="dash-card full" id="balance-card">
+                <div class="dash-title">Остаток (за всё время)</div>
+                <div class="dash-value val-total" id="total-balance" data-raw="0">0 смн</div>
+            </div>
+        </div>
+        <div class="today-line" id="today-line"></div>
+
+        <div class="type-selector">
+            <button type="button" class="type-btn income active" id="type-income" data-type="income">➕ Приход</button>
+            <button type="button" class="type-btn expense" id="type-expense" data-type="expense">➖ Расход</button>
+            <button type="button" class="type-btn debt" id="type-debt" data-type="debt">📒 Долг</button>
+        </div>
+        <div class="add-form">
+            <input type="text" id="task" autocomplete="off" enterkeyhint="next" placeholder="Описание (напр. Заказ / Материалы)">
+            <div class="add-row">
+                <input type="text" id="price" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="Сумма">
+                <input type="date" id="date" autocomplete="off" title="Дата записи">
+                <button class="btn-main" id="btn-add" title="Добавить">+</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="journal">📋 Журнал</button>
+            <button class="tab" data-tab="debts">📒 Долги<span class="count" id="debt-count"></span></button>
+        </div>
+
+        <!-- Журнал -->
+        <div id="tab-journal">
+            <input type="search" id="search" autocomplete="off" placeholder="🔍 Поиск (напр. дизель, Камаз)">
+            <div class="search-info" id="search-info"></div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Описание</th>
+                            <th>Сумма</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+            <div class="nav-btns">
+                <button class="btn-sec" id="btn-excel">📊 Скачать для Excel</button>
+                <button class="btn-sec" id="btn-txt">📄 Скачать TXT</button>
+            </div>
+        </div>
+
+        <!-- Долги -->
+        <div id="tab-debts" style="display:none;">
+            <div class="debt-head"><span>Вам должны всего:</span><b id="debt-total">0 смн</b></div>
+            <div class="debt-list" id="debt-list"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Окно изменения / оплаты -->
+<div class="modal-bg" id="modal">
+    <div class="modal">
+        <h3 id="m-title">Изменить запись</h3>
+        <div id="m-note" class="m-note" style="display:none;"></div>
+        <div class="type-selector" id="m-types" style="margin-bottom:0;">
+            <button type="button" class="type-btn income" data-mtype="income">➕ Приход</button>
+            <button type="button" class="type-btn expense" data-mtype="expense">➖ Расход</button>
+        </div>
+        <div id="m-desc-wrap">
+            <label for="m-desc">Описание</label>
+            <input type="text" id="m-desc" autocomplete="off">
+        </div>
+        <label for="m-price" id="m-price-label">Сумма</label>
+        <input type="text" id="m-price" inputmode="decimal" autocomplete="off">
+        <label for="m-date">Дата</label>
+        <input type="date" id="m-date" autocomplete="off">
+        <div class="modal-btns">
+            <button class="btn-sec" id="m-cancel">Отмена</button>
+            <button class="btn-main" id="m-save">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+/*__BACKEND_START__*/
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, enableIndexedDbPersistence, collection, addDoc, query, where, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBo5nsIBswK0NnQS89QdsD517Xqbd_jK2U",
+        authDomain: "dyadya-app.firebaseapp.com",
+        projectId: "dyadya-app",
+        storageBucket: "dyadya-app.firebasestorage.app",
+        messagingSenderId: "396455935954",
+        appId: "1:396455935954:web:933d06290ce7642099d20b"
+    };
+
+    const fbApp = initializeApp(firebaseConfig);
+    const auth = getAuth(fbApp);
+    const db = getFirestore(fbApp);
+    // Работа без интернета: записи хранятся на телефоне и отправляются, когда появится сеть
+    enableIndexedDbPersistence(db).catch(e => console.warn('Офлайн-режим недоступен:', e.code));
+    const provider = new GoogleAuthProvider();
+
+    const backend = {
+        demo: false,
+        onUser: cb => onAuthStateChanged(auth, cb),
+        login: () => signInWithPopup(auth, provider),
+        logout: () => signOut(auth),
+        subscribe(uid, cb) {
+            // Загружаем ТОЛЬКО записи этого аккаунта (раньше скачивалась вся база)
+            const q = query(collection(db, "expenses"), where("uid", "==", uid));
+            return onSnapshot(q, { includeMetadataChanges: true }, snap => {
+                const items = [];
+                snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+                cb(items, snap.metadata.hasPendingWrites);
+            }, err => {
+                console.error(err);
+                alert('Ошибка загрузки данных: ' + err.message);
+            });
+        },
+        add: data => addDoc(collection(db, "expenses"), data),
+        update: (id, data) => updateDoc(doc(db, "expenses", id), data),
+        remove: id => deleteDoc(doc(db, "expenses", id)),
+        toDate: v => (v && typeof v.toDate === 'function') ? v.toDate() : (v ? new Date(v) : null)
+    };
+/*__BACKEND_END__*/
+
+    // ================== ПРИЛОЖЕНИЕ ==================
+    const $ = id => document.getElementById(id);
+    const MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+    const BIG_AMOUNT = 50000; // при такой сумме и больше — спросить подтверждение
+
+    let currentUser = null;
+    let allData = [];
+    let selectedPeriod = '';
+    let currentType = 'income';
+    let activeTab = 'journal';
+    let lastSignature = '';
+    let hasPending = false;
+    let modalState = null;
+
+    // ---------- помощники ----------
+    const pad = n => String(n).padStart(2, '0');
+    const round2 = n => Math.round(n * 100) / 100;
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const isIncome = it => it.type === 'income' || !it.type; // старые записи без типа = приход
+    const isExpense = it => it.type === 'expense';
+    const isDebt = it => it.type === 'debt';
+    const monthKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+    const dateInputValue = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    const fmtDate = d => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+    const shortDate = d => d.getFullYear() === new Date().getFullYear() ? `${pad(d.getDate())}.${pad(d.getMonth() + 1)}` : fmtDate(d);
+    const fmtTime = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+    // 1 250,50 — пробел между тысячами, дирамы после запятой (раньше копейки терялись)
+    function formatNumber(num) {
+        let n = Number(num);
+        if (!isFinite(n)) n = 0;
+        const neg = n < 0;
+        const [i, d] = Math.abs(round2(n)).toFixed(2).split('.');
+        return (neg ? '-' : '') + i.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + (d !== '00' ? ',' + d : '');
+    }
+
+    // понимает и "150.5", и "150,5", и "1 500"
+    function parseAmount(str) {
+        const v = parseFloat(String(str).replace(/\s/g, '').replace(',', '.'));
+        return isFinite(v) ? round2(v) : NaN;
+    }
+
+    // дата из поля <input type=date>, время берётся из keepTimeFrom (или текущее)
+    function fromDateInput(val, keepTimeFrom) {
+        const t = keepTimeFrom || new Date();
+        if (!val) return new Date(t);
+        const [y, m, d] = val.split('-').map(Number);
+        return new Date(y, m - 1, d, t.getHours(), t.getMinutes(), t.getSeconds());
+    }
+
+    function shake(el) {
+        el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+        el.focus();
+        setTimeout(() => el.classList.remove('shake'), 400);
+    }
+
+    function saveError(err) {
+        console.error(err);
+        alert('Не удалось сохранить: ' + (err.message || err));
+    }
+
+    function animateNumber(el, endValue, suffix) {
+        const startValue = Number(el.dataset.raw) || 0;
+        el.dataset.raw = endValue;
+        if (startValue === endValue) { el.innerText = formatNumber(endValue) + suffix; return; }
+        const duration = 550;
+        const startTime = performance.now();
+        function step(now) {
+            const p = Math.min((now - startTime) / duration, 1);
+            const eased = 1 - Math.pow(1 - p, 3);
+            el.innerText = formatNumber(startValue + (endValue - startValue) * eased) + suffix;
+            if (p < 1) requestAnimationFrame(step);
+            else el.innerText = formatNumber(endValue) + suffix;
+        }
+        requestAnimationFrame(step);
+    }
+
+    function showLoginError(message) {
+        const box = $('login-error');
+        box.innerText = message;
+        box.style.display = 'block';
+    }
+
+    // ---------- вход ----------
+    $('btn-login').onclick = async () => {
+        $('login-error').style.display = 'none';
+        try {
+            await backend.login();
+        } catch (err) {
+            console.error('Ошибка входа Google:', err);
+            let msg = 'Не удалось войти через Google. Код ошибки: ' + (err.code || err.message);
+            if (err.code === 'auth/operation-not-supported-in-this-environment') {
+                msg = 'Вход не работает при открытии файла напрямую (file://). Загрузите страницу на хостинг (Firebase Hosting, GitHub Pages и т.п.) или откройте её через локальный сервер (http://localhost) — Google-вход требует адрес http/https.';
+            } else if (err.code === 'auth/unauthorized-domain') {
+                msg = 'Этот домен не разрешён в Firebase. Зайдите в консоль Firebase → Authentication → Settings → Authorized domains и добавьте текущий домен сайта.';
+            } else if (err.code === 'auth/popup-blocked') {
+                msg = 'Браузер заблокировал всплывающее окно входа. Разрешите всплывающие окна для этого сайта и попробуйте снова.';
+            } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+                msg = 'Окно входа было закрыто до завершения авторизации. Попробуйте ещё раз и дождитесь окна Google.';
+            } else if (err.code === 'auth/network-request-failed') {
+                msg = 'Проблема с интернет-соединением. Проверьте сеть и попробуйте снова.';
+            }
+            showLoginError(msg);
+        }
+    };
+
+    $('btn-logout').onclick = () => backend.logout().then(() => location.reload());
+
+    backend.onUser(user => {
+        if (!user) return;
+        currentUser = user;
+        $('login-screen').style.display = 'none';
+        if (backend.demo) { startApp(); return; }
+        $('pass-screen').style.display = 'block';
+        const savedPass = localStorage.getItem('app_pass_' + user.uid);
+        if (!savedPass) $('pass-title').innerText = "Придумайте пин-код доступа";
+        setTimeout(() => $('entry-pass').focus(), 50);
+    });
+
+    $('btn-check-pass').onclick = () => {
+        const input = $('entry-pass').value;
+        const key = 'app_pass_' + currentUser.uid;
+        const saved = localStorage.getItem(key);
+        if (!saved) {
+            if (input.length > 0) {
+                localStorage.setItem(key, input);
+                startApp();
+            } else { alert("Введите хотя бы один символ!"); }
+        } else {
+            if (input === saved) { startApp(); }
+            else { alert("Неверный пароль!"); }
+        }
+    };
+    $('entry-pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-check-pass').click(); });
+
+    $('btn-change-pass').onclick = $('btn-reset-pass').onclick = () => {
+        if (confirm("Сбросить текущий пароль?")) {
+            localStorage.removeItem('app_pass_' + currentUser.uid);
+            location.reload();
+        }
+    };
+
+    function startApp() {
+        $('pass-screen').style.display = 'none';
+        $('app').style.display = 'block';
+        if (backend.demo) {
+            $('demo-banner').style.display = 'block';
+            $('btn-change-pass').style.display = 'none';
+        }
+        $('user-name').innerText = currentUser.displayName || '';
+        $('avatar-dot').innerText = (currentUser.displayName || '?').trim().charAt(0).toUpperCase();
+        $('date').value = dateInputValue(new Date());
+        backend.subscribe(currentUser.uid, onData);
+    }
+
+    // ---------- данные ----------
+    function onData(items, pending) {
+        hasPending = pending;
+        updateNetStatus();
+        const prepared = items
+            .map(it => ({ ...it, _d: backend.toDate(it.date) }))
+            .filter(it => it._d && !isNaN(it._d))
+            .sort((a, b) => b._d - a._d);
+        // перерисовываем только если данные реально поменялись
+        const sig = JSON.stringify(prepared.map(it => [it.id, it.type, it.desc, it.price, it._d.getTime(), it.paidAmount, it.paid]));
+        if (sig === lastSignature) return;
+        lastSignature = sig;
+        allData = prepared;
+        renderAll();
+    }
+
+    function updateNetStatus() {
+        const box = $('net-status');
+        if (backend.demo) { box.classList.remove('show'); return; }
+        if (!navigator.onLine) {
+            box.innerText = '📴 Нет интернета. Можно продолжать записывать — всё сохранится на телефоне и само отправится, когда появится сеть.';
+            box.classList.add('show');
+        } else if (hasPending) {
+            box.innerText = '⏳ Отправляю записи…';
+            box.classList.add('show');
+        } else {
+            box.classList.remove('show');
+        }
+    }
+    window.addEventListener('online', updateNetStatus);
+    window.addEventListener('offline', updateNetStatus);
+
+    function periodItems() {
+        if (selectedPeriod === 'all') return allData;
+        return allData.filter(it => monthKey(it._d) === selectedPeriod);
+    }
+
+    function renderAll() {
+        populateMonthSelector();
+        renderSummary();
+        renderJournal();
+        renderDebts();
+    }
+
+    function populateMonthSelector() {
+        const select = $('month-select');
+        const months = new Set(allData.map(it => monthKey(it._d)));
+        const current = monthKey(new Date());
+        months.add(current);
+        if (selectedPeriod && selectedPeriod !== 'all') months.add(selectedPeriod);
+        select.innerHTML = '';
+        Array.from(months).sort().reverse().forEach(m => {
+            const [y, mm] = m.split('-');
+            const o = document.createElement('option');
+            o.value = m;
+            o.textContent = `${MONTHS[parseInt(mm) - 1]} ${y}`;
+            select.appendChild(o);
+        });
+        const all = document.createElement('option');
+        all.value = 'all';
+        all.textContent = 'Всё время';
+        select.appendChild(all);
+        if (!selectedPeriod) selectedPeriod = current;
+        select.value = selectedPeriod;
+    }
+
+    $('month-select').onchange = e => {
+        selectedPeriod = e.target.value;
+        renderSummary();
+        renderJournal();
+    };
+
+    function renderSummary() {
+        let inc = 0, exp = 0;
+        periodItems().forEach(it => {
+            const p = Number(it.price) || 0;
+            if (isIncome(it)) inc += p; else if (isExpense(it)) exp += p;
+        });
+        animateNumber($('total-income'), round2(inc), " смн");
+        animateNumber($('total-expense'), round2(exp), " смн");
+
+        // Остаток считается по ВСЕМ записям за всё время (долги не считаются, пока не оплачены)
+        let allInc = 0, allExp = 0, tInc = 0, tExp = 0;
+        const today = new Date();
+        allData.forEach(it => {
+            const p = Number(it.price) || 0;
+            if (isIncome(it)) { allInc += p; if (sameDay(it._d, today)) tInc += p; }
+            else if (isExpense(it)) { allExp += p; if (sameDay(it._d, today)) tExp += p; }
+        });
+        const balance = round2(allInc - allExp);
+        const balanceEl = $('total-balance');
+        animateNumber(balanceEl, balance, " смн");
+        balanceEl.className = "dash-value " + (balance >= 0 ? "val-income" : "val-expense");
+        const card = $('balance-card');
+        card.classList.remove('positive', 'negative');
+        card.classList.add(balance >= 0 ? 'positive' : 'negative');
+
+        $('today-line').innerHTML = `Сегодня: <b class="inc">+${formatNumber(tInc)}</b> &nbsp;·&nbsp; <b class="exp">−${formatNumber(tExp)}</b> смн`;
+    }
+
+    function journalItems() {
+        const q = $('search').value.trim().toLowerCase();
+        let list = periodItems().filter(it => !isDebt(it));
+        if (q) list = list.filter(it => String(it.desc || '').toLowerCase().includes(q) || String(it.price).includes(q));
+        return list;
+    }
+
+    function renderJournal() {
+        const body = $('table-body');
+        const list = journalItems();
+        const q = $('search').value.trim();
+
+        if (q) {
+            let inc = 0, exp = 0;
+            list.forEach(it => { if (isIncome(it)) inc += Number(it.price) || 0; else exp += Number(it.price) || 0; });
+            $('search-info').innerHTML = `Найдено: <b>${list.length}</b> · приход <b style="color:var(--income)">${formatNumber(inc)}</b> · расход <b style="color:var(--expense)">${formatNumber(exp)}</b> смн`;
+        } else {
+            $('search-info').innerHTML = '';
+        }
+
+        if (list.length === 0) {
+            body.innerHTML = `<tr><td colspan="4"><div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg>
+                <div>${q ? 'Ничего не найдено' : 'Записей за этот период пока нет'}</div>
+            </div></td></tr>`;
+            return;
+        }
+
+        body.innerHTML = list.map((it, i) => {
+            const inc = isIncome(it);
+            const delay = Math.min(i * 0.04, 0.4);
+            return `<tr data-id="${esc(it.id)}" style="animation-delay:${delay}s">
+                <td style="white-space:nowrap">${shortDate(it._d)}<br><span class="time-col">${fmtTime(it._d)}</span></td>
+                <td class="desc-col">${esc(it.desc)}</td>
+                <td class="${inc ? 'amount-income' : 'amount-expense'}" style="white-space:nowrap">${inc ? '+' : '−'} ${formatNumber(it.price)} смн</td>
+                <td class="acts">
+                    <button class="icon-btn" data-act="edit" title="Изменить">✏️</button>
+                    <button class="icon-btn" data-act="del" title="Удалить">🗑️</button>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    $('search').addEventListener('input', renderJournal);
+
+    $('table-body').addEventListener('click', e => {
+        const btn = e.target.closest('[data-act]');
+        if (!btn) return;
+        const id = btn.closest('tr').dataset.id;
+        if (btn.dataset.act === 'edit') openEdit(id);
+        if (btn.dataset.act === 'del') deleteRecord(id);
+    });
+
+    function renderDebts() {
+        const debts = allData.filter(isDebt);
+        const open = debts.filter(d => !d.paid);
+        const closed = debts.filter(d => d.paid);
+        const left = d => round2((Number(d.price) || 0) - (Number(d.paidAmount) || 0));
+        const total = open.reduce((s, d) => s + left(d), 0);
+
+        $('debt-count').textContent = open.length ? open.length : '';
+        $('debt-total').textContent = formatNumber(total) + ' смн';
+
+        const card = (d, i) => {
+            const price = Number(d.price) || 0;
+            const paid = Number(d.paidAmount) || 0;
+            const pct = price > 0 ? Math.min(100, paid / price * 100) : 0;
+            return `<div class="debt-card ${d.paid ? 'paid' : ''}" data-id="${esc(d.id)}" style="animation-delay:${Math.min(i * 0.04, 0.4)}s">
+                <div class="debt-top"><b>${esc(d.desc)}</b><span class="debt-left">${d.paid ? '✅ оплачен' : formatNumber(left(d)) + ' смн'}</span></div>
+                <div class="debt-sub">с ${fmtDate(d._d)} · всего ${formatNumber(price)} · оплачено ${formatNumber(paid)} смн</div>
+                <div class="debt-bar"><span style="width:${pct}%"></span></div>
+                <div class="debt-actions">
+                    ${d.paid ? '' : '<button class="action-btn pay" data-act="pay">✅ Принять оплату</button>'}
+                    <button class="action-btn" data-act="edit">Изменить</button>
+                    <button class="action-btn" style="color:#ef4444;" data-act="del">Удалить</button>
+                </div>
+            </div>`;
+        };
+
+        let html = open.length
+            ? open.map(card).join('')
+            : `<div class="empty-state">Долгов нет 👍<br><span style="font-size:11px">Нажмите «📒 Долг» сверху, чтобы записать, кто сколько должен</span></div>`;
+        if (closed.length) {
+            html += `<details class="paid-list"><summary>Погашенные долги (${closed.length})</summary>${closed.map(card).join('')}</details>`;
+        }
+        $('debt-list').innerHTML = html;
+    }
+
+    $('debt-list').addEventListener('click', e => {
+        const btn = e.target.closest('[data-act]');
+        if (!btn) return;
+        const id = btn.closest('.debt-card').dataset.id;
+        if (btn.dataset.act === 'pay') openPay(id);
+        if (btn.dataset.act === 'edit') openEdit(id);
+        if (btn.dataset.act === 'del') deleteRecord(id);
+    });
+
+    // ---------- вкладки и тип ----------
+    function switchTab(tab) {
+        activeTab = tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+        $('tab-journal').style.display = tab === 'journal' ? 'block' : 'none';
+        $('tab-debts').style.display = tab === 'debts' ? 'block' : 'none';
+    }
+    document.querySelectorAll('.tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
+
+    function setTxType(type) {
+        currentType = type;
+        document.querySelectorAll('.type-selector .type-btn[data-type]').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+        $('task').placeholder = type === 'debt'
+            ? 'Кто должен и за что (напр. Фарход — ремонт Камаза)'
+            : 'Описание (напр. Заказ / Материалы)';
+        if (type === 'debt') switchTab('debts');
+    }
+    document.querySelectorAll('.type-btn[data-type]').forEach(b => b.onclick = () => setTxType(b.dataset.type));
+
+    // ---------- добавление ----------
+    function addRecord() {
+        const taskEl = $('task'), priceEl = $('price');
+        const desc = taskEl.value.trim();
+        const price = parseAmount(priceEl.value);
+        if (!desc) { shake(taskEl); return; }
+        if (!(price > 0)) { shake(priceEl); return; }
+        if (price >= BIG_AMOUNT && !confirm(`Сумма ${formatNumber(price)} смн — всё правильно?`)) return;
+
+        const date = fromDateInput($('date').value);
+        const data = { uid: currentUser.uid, desc, price, type: currentType, date };
+        if (currentType === 'debt') { data.paidAmount = 0; data.paid = false; }
+
+        if (selectedPeriod !== 'all') selectedPeriod = monthKey(date);
+        backend.add(data).catch(saveError); // без await — чтобы работало и без интернета
+
+        const btn = $('btn-add');
+        btn.classList.remove('added'); void btn.offsetWidth; btn.classList.add('added');
+        taskEl.value = '';
+        priceEl.value = '';
+        $('date').value = dateInputValue(new Date());
+        $('search').value = '';
+        switchTab(currentType === 'debt' ? 'debts' : 'journal');
+        renderAll();
+        taskEl.focus();
+    }
+    $('btn-add').onclick = addRecord;
+    // Enter: в описании → перейти к сумме, в сумме → сохранить
+    $('task').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('price').focus(); } });
+    $('price').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addRecord(); } });
+
+    // ---------- удаление ----------
+    function deleteRecord(id) {
+        const it = allData.find(x => x.id === id);
+        if (!it) return;
+        const msg = isDebt(it)
+            ? `Удалить долг «${it.desc}»?\n(Уже полученные оплаты останутся в журнале.)`
+            : `Удалить запись «${it.desc}» на ${formatNumber(it.price)} смн?`;
+        if (confirm(msg)) backend.remove(id).catch(saveError);
+    }
+
+    // ---------- окно изменения / оплаты ----------
+    function setModalType(type) {
+        modalState.type = type;
+        document.querySelectorAll('#m-types .type-btn').forEach(b => b.classList.toggle('active', b.dataset.mtype === type));
+    }
+    document.querySelectorAll('#m-types .type-btn').forEach(b => b.onclick = () => setModalType(b.dataset.mtype));
+
+    function openModal() {
+        $('modal').classList.add('open');
+        setTimeout(() => (modalState.mode === 'pay' ? $('m-price') : $('m-desc')).focus(), 60);
+    }
+    function closeModal() {
+        $('modal').classList.remove('open');
+        modalState = null;
+    }
+
+    function openEdit(id) {
+        const it = allData.find(x => x.id === id);
+        if (!it) return;
+        modalState = { mode: 'edit', id, type: isDebt(it) ? 'debt' : (isIncome(it) ? 'income' : 'expense') };
+        $('m-title').textContent = isDebt(it) ? 'Изменить долг' : 'Изменить запись';
+        $('m-note').style.display = 'none';
+        $('m-types').style.display = isDebt(it) ? 'none' : 'flex';
+        if (!isDebt(it)) setModalType(modalState.type);
+        $('m-desc-wrap').style.display = 'block';
+        $('m-desc').value = it.desc || '';
+        $('m-price-label').textContent = isDebt(it) ? 'Сумма долга (всего)' : 'Сумма';
+        $('m-price').value = String(Number(it.price) || '').replace('.', ',');
+        $('m-date').value = dateInputValue(it._d);
+        openModal();
+    }
+
+    function openPay(id) {
+        const it = allData.find(x => x.id === id);
+        if (!it) return;
+        const left = round2((Number(it.price) || 0) - (Number(it.paidAmount) || 0));
+        modalState = { mode: 'pay', id, left };
+        $('m-title').textContent = 'Принять оплату долга';
+        $('m-note').style.display = 'block';
+        $('m-note').innerHTML = `<b>${esc(it.desc)}</b><br>Осталось: ${formatNumber(left)} смн`;
+        $('m-types').style.display = 'none';
+        $('m-desc-wrap').style.display = 'none';
+        $('m-price-label').textContent = 'Сколько отдал (можно частично)';
+        $('m-price').value = String(left).replace('.', ',');
+        $('m-date').value = dateInputValue(new Date());
+        openModal();
+    }
+
+    $('m-save').onclick = () => {
+        if (!modalState) return;
+        const it = allData.find(x => x.id === modalState.id);
+        if (!it) { closeModal(); return; }
+        const price = parseAmount($('m-price').value);
+        if (!(price > 0)) { shake($('m-price')); return; }
+
+        if (modalState.mode === 'pay') {
+            if (price > modalState.left) {
+                alert(`Это больше, чем остаток долга (${formatNumber(modalState.left)} смн).`);
+                return;
+            }
+            const date = fromDateInput($('m-date').value);
+            const paidAmount = round2((Number(it.paidAmount) || 0) + price);
+            backend.add({ uid: currentUser.uid, type: 'income', desc: 'Оплата долга: ' + it.desc, price, date, debtId: it.id }).catch(saveError);
+            backend.update(it.id, { paidAmount, paid: paidAmount >= (Number(it.price) || 0) }).catch(saveError);
+            closeModal();
+            return;
+        }
+
+        const desc = $('m-desc').value.trim();
+        if (!desc) { shake($('m-desc')); return; }
+        if (price >= BIG_AMOUNT && price !== Number(it.price) && !confirm(`Сумма ${formatNumber(price)} смн — всё правильно?`)) return;
+        const date = fromDateInput($('m-date').value, it._d);
+        const data = { desc, price, date };
+        if (isDebt(it)) data.paid = (Number(it.paidAmount) || 0) >= price;
+        else data.type = modalState.type;
+        backend.update(it.id, data).catch(saveError);
+        closeModal();
+    };
+    $('m-cancel').onclick = closeModal;
+    $('modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+    document.addEventListener('keydown', e => {
+        if (!modalState) return;
+        if (e.key === 'Escape') closeModal();
+        if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); $('m-save').click(); }
+    });
+
+    // ---------- отчёты ----------
+    function periodTitle() {
+        const sel = $('month-select');
+        const opt = sel.options[sel.selectedIndex];
+        return opt ? opt.textContent : '';
+    }
+
+    function download(content, filename, mime) {
+        const blob = new Blob([content], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    const plain = n => String(round2(Number(n) || 0)).replace('.', ',');
+
+    // Файл для Excel (открывается двойным нажатием, русские буквы видны)
+    $('btn-excel').onclick = () => {
+        const list = journalItems().slice().reverse();
+        const cell = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+        const rows = [['Дата', 'Время', 'Тип', 'Описание', 'Приход', 'Расход']];
+        let inc = 0, exp = 0;
+        list.forEach(it => {
+            const p = Number(it.price) || 0;
+            const isInc = isIncome(it);
+            if (isInc) inc += p; else exp += p;
+            rows.push([fmtDate(it._d), fmtTime(it._d), isInc ? 'Приход' : 'Расход', it.desc, isInc ? plain(p) : '', isInc ? '' : plain(p)]);
+        });
+        rows.push([]);
+        rows.push(['', '', '', 'ИТОГО', plain(inc), plain(exp)]);
+        rows.push(['', '', '', 'Баланс за период', plain(inc - exp), '']);
+        const open = allData.filter(it => isDebt(it) && !it.paid);
+        if (open.length) {
+            rows.push([]);
+            rows.push(['', '', '', 'ДОЛГИ КЛИЕНТОВ (осталось)', '', '']);
+            open.forEach(d => rows.push([fmtDate(d._d), '', 'Долг', d.desc, plain((Number(d.price) || 0) - (Number(d.paidAmount) || 0)), '']));
+        }
+        const csv = '﻿' + rows.map(r => r.map(cell).join(';')).join('\r\n');
+        download(csv, `otchet_${selectedPeriod}.csv`, 'text/csv;charset=utf-8');
+    };
+
+    $('btn-txt').onclick = () => {
+        const list = journalItems().slice().reverse();
+        const lines = ['ОТЧЕТ ЗА ' + periodTitle().toUpperCase(), 'База: Ремонт фур • Дизель • Электроника', 'Мастер: ' + (currentUser.displayName || ''), '', 'Дата/Время\tТип\tОписание\tСумма (смн)'];
+        let inc = 0, exp = 0;
+        list.forEach(it => {
+            const p = Number(it.price) || 0;
+            const isInc = isIncome(it);
+            if (isInc) inc += p; else exp += p;
+            lines.push(`${fmtDate(it._d)} ${fmtTime(it._d)}\t${isInc ? 'Приход' : 'Расход'}\t${it.desc}\t${isInc ? '+' : '-'} ${formatNumber(p)}`);
+        });
+        lines.push('', `Всего приход: ${formatNumber(inc)} смн`);
+        lines.push(`Всего расход: ${formatNumber(exp)} смн`);
+        lines.push(`Баланс за период: ${formatNumber(inc - exp)} смн`);
+        const open = allData.filter(it => isDebt(it) && !it.paid);
+        if (open.length) {
+            lines.push('', 'ДОЛГИ КЛИЕНТОВ:');
+            open.forEach(d => lines.push(`${fmtDate(d._d)}\t${d.desc}\tосталось ${formatNumber((Number(d.price) || 0) - (Number(d.paidAmount) || 0))} смн`));
+        }
+        download(lines.join('\r\n'), `otchet_${selectedPeriod}.txt`, 'text/plain;charset=utf-8');
+    };
+</script>
+</body>
+</html>
